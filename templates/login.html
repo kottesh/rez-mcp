@@ -1,0 +1,191 @@
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REZ - Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "IBM Plex Sans", sans-serif;
+      background: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-container {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+
+    .welcome-text {
+      font-size: 20px;
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 6px;
+      text-align: left;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .form-group { margin-bottom: 14px; text-align: left; }
+    .form-label { display: none; }
+
+    .form-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #111827;
+      background: #fff;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    .form-input::placeholder { color: #9ca3af; }
+
+    .password-container { position: relative; }
+    .password-toggle {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #9ca3af;
+      padding: 4px;
+    }
+    .password-toggle:hover { color: #4b5563; }
+
+    .continue-btn {
+      width: 100%;
+      background: #6366f1;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+    .continue-btn:hover { background: #4f46e5; }
+    .continue-btn:active { background: #4338ca; transform: scale(0.98); }
+
+    .error-message {
+      color: #ef4444;
+      font-size: 13px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .success-message {
+      color: #16a34a;
+      font-size: 13px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h1 class="welcome-text">Hey there, Welcome back!</h1>
+    <p class="subtitle">Please sign in to continue</p>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <input 
+          type="text" id="username" name="username" class="form-input"
+          placeholder="Enter your username" required
+          value="{{ request.form.username if request else '' }}"
+        >
+      </div>
+
+      <div class="form-group">
+        <div class="password-container">
+          <input 
+            type="password" id="password" name="password" class="form-input"
+            placeholder="Enter your password" required
+          >
+          <button type="button" class="password-toggle" id="togglePassword">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2">
+              <path id="eyeIcon" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle id="eyeCircle" cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div id="messageContainer"></div>
+
+      <button type="submit" class="continue-btn">Continue</button>
+    </form>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const togglePassword = document.getElementById('togglePassword');
+      const passwordInput = document.getElementById('password');
+      const form = document.getElementById('loginForm');
+      const messageContainer = document.getElementById('messageContainer');
+      const sessionId = "{{ session_id }}";  // passed from backend
+
+      togglePassword.addEventListener('click', function() {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        if (type === 'text') {
+          togglePassword.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m1 1 22 22"></path><path d="M6.44 6.44A9.93 9.93 0 0 0 1 12s4 8 11 8c1.18 0 2.31-.2 3.35-.56"></path><path d="M19.65 16.75A9.93 9.93 0 0 0 23 12s-4-8-11-8c-1.36 0-2.66.3-3.85.84"></path><path d="m8.5 8.5 7 7"></path></svg>';
+        } else {
+          togglePassword.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+        }
+      });
+
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        messageContainer.innerHTML = '';
+
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+
+        try {
+          const response = await fetch(`/auth/login?session_id=${sessionId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            messageContainer.innerHTML = `<div class="error-message">${data.error || 'Login failed'}</div>`;
+          } else {
+            messageContainer.innerHTML = `<div class="success-message">Login successful! <div>`;
+          }
+        } catch (err) {
+          messageContainer.innerHTML = `<div class="error-message">Something went wrong. Please try again.</div>`;
+        }
+      });
+    });
+  </script>
+</body>
