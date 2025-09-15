@@ -1,6 +1,7 @@
 from fastmcp import FastMCP
 import asyncio
 from tools.setup import login, get_profile
+from tools.results import get_results, get_result
 from config import rez_config
 from manager import app
 import uvicorn
@@ -9,6 +10,8 @@ mcp = FastMCP(name="Rez MCP Server")
 
 mcp.tool(login)
 mcp.tool(get_profile)
+mcp.tool(get_results)
+mcp.tool(get_result)
 
 
 async def run_manager():

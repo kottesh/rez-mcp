@@ -30,7 +30,7 @@ async def post(api_url: str, payload: dict) -> dict:
             raise Exception(f"Failed to call API {str(e)}") from e
 
 
-async def call(api_url, params: dict | None = None):
+async def call(api_url, params: dict | None = None, addtional_headers: dict | None = None):
     async with httpx.AsyncClient(
         timeout=30,
         base_url=rez_config.cit_base_url,
@@ -43,7 +43,7 @@ async def call(api_url, params: dict | None = None):
             logger.info(
                 f"Calling API at {api_url} with params {params if params else 'Nothing'}"
             )
-            response = await client.get(api_url, params=params)
+            response = await client.get(api_url, params=params, headers=addtional_headers)
             response.raise_for_status()
             return response.text
 
