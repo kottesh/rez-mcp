@@ -52,7 +52,9 @@ async def get_profile(ctx: Context) -> dict:
     if sessions.get(session_id) is None:
         raise Exception("User not logged in, login to continue.")
 
-    data = await call("/personal.php", addtional_headers={"Cookie": sessions[session_id].cookie})
+    data = await call(
+        "/personal.php", addtional_headers={"Cookie": sessions[session_id].cookie}
+    )
 
     sp = BeautifulSoup(data, "html.parser")
     tables = sp.find("td", attrs={"align": "center"}).parent.find_all("table")
@@ -69,4 +71,3 @@ async def get_profile(ctx: Context) -> dict:
     profile = {k: v for k, v in zip(tables[0], tables[1])}
 
     return profile
-

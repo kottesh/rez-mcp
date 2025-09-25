@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.exceptions import HTTPException
@@ -38,7 +38,7 @@ async def root() -> str:
 
 
 @app.get("/auth/login")
-async def login_page(session_id: str | None = None) -> HTMLResponse:
+async def login_page(request: Request, session_id: str | None = None) -> HTMLResponse:
     if session_id is None or session_id not in sessions:
         return HTMLResponse(content="Invalid Session", status_code=400)
 
@@ -51,7 +51,7 @@ async def login_page(session_id: str | None = None) -> HTMLResponse:
         return HTMLResponse(content="You are already logged in!", status_code=200)
 
     return templates.TemplateResponse(
-        "login.html", {"request": {}, "session_id": session_id}
+        request=request, name="login.html", context={"session_id": session_id}
     )
 
 
@@ -67,7 +67,7 @@ async def authorize(session_id: str, creds: LoginCreds) -> JSONResponse:
         base_url=rez_config.cit_base_url,
         timeout=15.0,
         follow_redirects=False,
-        verify=False
+        verify=False,
     ) as client:
         try:
             response = client.post(
