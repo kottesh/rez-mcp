@@ -17,6 +17,12 @@ async def login(ctx: Context) -> str:
     visit this URL in their browser to complete the authentication process.
 
     If the user is already logged in, this tool will confirm their authenticated status.
+
+    Command:
+        Show the login URL in a markdown format
+
+    Returns:
+        Login URL or confirms if the user is already logged in.
     """
 
     mcp_session_id = ctx.session_id
@@ -33,13 +39,7 @@ async def login(ctx: Context) -> str:
 
 async def get_profile(ctx: Context) -> dict:
     """
-    Retrieves the student's profile information from the CIT Results Site.
-
-    This tool requires the user to be authenticated. If the user is not logged in,
-    it will raise an exception, and the `login` tool must be called first.
-
-    The profile data is parsed from the site's HTML and returned as a structured
-    dictionary containing key-value pairs of the student's details.
+    Retrieves the student's profile information from the CIT results site.
 
     Returns:
         dict: A dictionary containing the student's profile information.

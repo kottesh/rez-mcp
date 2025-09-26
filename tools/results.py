@@ -36,7 +36,10 @@ async def get_results(ctx: Context) -> list:
 
 async def get_result(ctx: Context, exam_code: str) -> dict:
     """
-    Retrieves the exam result using the `exam_code`
+    Retrieves the exam result using the `exam_code`.
+
+    Command:
+        Show the results in a markdown table format.
 
     Returns:
         dict: A python dictionary that cotains the fields such as GPA, Semesters, Papers(Name, Grade, Pass/Fail)

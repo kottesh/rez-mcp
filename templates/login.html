@@ -19,6 +19,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 20px;
         }
 
         .login-container {
@@ -29,6 +30,42 @@
             width: 100%;
             max-width: 380px;
             text-align: center;
+            position: relative;
+        }
+
+        .notification {
+            position: absolute;
+            top: -60px;
+            left: 0;
+            right: 0;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .notification.error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .notification.success {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
         }
 
         .welcome-text {
@@ -115,22 +152,74 @@
         }
 
         .error-message {
-            color: #ef4444;
-            font-size: 13px;
-            margin-bottom: 10px;
-            text-align: center;
+            display: none;
         }
 
         .success-message {
-            color: #16a34a;
-            font-size: 13px;
-            margin-bottom: 10px;
-            text-align: center;
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 16px;
+            }
+            
+            .login-container {
+                padding: 28px 24px;
+                max-width: 100%;
+            }
+            
+            .welcome-text {
+                font-size: 18px;
+            }
+            
+            .subtitle {
+                font-size: 13px;
+            }
+            
+            .form-input {
+                padding: 14px 12px;
+                font-size: 16px;
+            }
+            
+            .continue-btn {
+                padding: 14px 20px;
+                font-size: 16px;
+            }
+            
+            .notification {
+                top: -50px;
+                padding: 10px 14px;
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 320px) {
+            .login-container {
+                padding: 24px 20px;
+            }
+            
+            .welcome-text {
+                font-size: 16px;
+            }
+        }
+
+        @media (max-height: 600px) and (orientation: landscape) {
+            body {
+                align-items: flex-start;
+                padding-top: 40px;
+            }
+            
+            .login-container {
+                margin: 0 auto;
+            }
         }
     </style>
 </head>
 <body>
     <div class="login-container">
+        <div id="notification" class="notification"></div>
+        
         <h1 class="welcome-text">Hey there, Welcome back!</h1>
         <p class="subtitle">Please sign in to continue</p>
 
@@ -185,7 +274,6 @@
                 </div>
             </div>
 
-            <!-- Messages -->
             <div id="messageContainer"></div>
 
             <button type="submit" class="continue-btn">Continue</button>
@@ -197,9 +285,21 @@
             const togglePassword = document.getElementById("togglePassword");
             const passwordInput = document.getElementById("password");
             const form = document.getElementById("loginForm");
-            const messageContainer =
-                document.getElementById("messageContainer");
-            const sessionId = "{{ session_id }}"; // passed from backend
+            const messageContainer = document.getElementById("messageContainer");
+            const notification = document.getElementById("notification");
+            const sessionId = "{{ session_id }}";
+
+            function showNotification(message, type) {
+                notification.textContent = message;
+                notification.className = `notification ${type}`;
+                notification.classList.add('show');
+                
+                if (type === 'error') {
+                    setTimeout(() => {
+                        notification.classList.remove('show');
+                    }, 5000);
+                }
+            }
 
             togglePassword.addEventListener("click", function () {
                 const type =
@@ -216,39 +316,42 @@
                 }
             });
 
-            form.addEventListener("submit", async function (e) {
+            form.addEventListener("submit", function (e) {
                 e.preventDefault();
                 messageContainer.innerHTML = "";
+                notification.classList.remove('show');
 
                 const username = document
                     .getElementById("username")
-                    .value.trim();
+                    .value
+                    .trim();
                 const password = document
                     .getElementById("password")
-                    .value.trim();
+                    .value
+                    .trim();
 
-                try {
-                    const response = await fetch(
-                        `/auth/login?session_id=${sessionId}`,
-                        {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ username, password }),
+                fetch(`/auth/login?session_id=${sessionId}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password }),
+                })
+                .then((response)=>{
+                    return response.json().then(
+                        (data) => {
+                            return {"response": response, "data": data}
                         }
-                    );
-
-                    const data = await response.json();
-
-                    if (!response.ok) {
-                        messageContainer.innerHTML = `<div class="error-message">${
-                            data.error || "Login failed"
-                        }</div>`;
+                    )
+                })
+                .then((result) => {
+                    if (!result.response.ok) {
+                        showNotification(result.data.error || "Login failed", "error");
                     } else {
-                        messageContainer.innerHTML = `<div class="success-message">Login successful! <div>`;
+                        showNotification("Login successful!", "success");
                     }
-                } catch (err) {
-                    messageContainer.innerHTML = `<div class="error-message">Something went wrong. Please try again.</div>`;
-                }
+                })
+                .catch ((err) => {
+                    showNotification("Something went wrong. Please try again.", "error");
+                })
             });
         });
     </script>
