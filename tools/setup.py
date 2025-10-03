@@ -34,7 +34,7 @@ async def login(ctx: Context) -> str:
 
     sessions[mcp_session_id] = None
 
-    return f"Follow the link to login: http://{rez_config.mcp_auth_host}:{rez_config.mcp_auth_port}/auth/login?session_id={mcp_session_id}"
+    return f"Follow the link to login: {rez_config.rez_base_url}/auth/login?session_id={mcp_session_id}"
 
 
 async def get_profile(ctx: Context) -> dict:

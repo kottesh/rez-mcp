@@ -1,10 +1,9 @@
 from fastmcp import FastMCP
-import asyncio
 from tools.setup import login, get_profile
 from tools.results import get_results, get_result
-from config import rez_config
-from manager import app
-import uvicorn
+from manager import auth_app
+from starlette.applications import Starlette
+from starlette.routing import Mount 
 
 mcp = FastMCP(name="Rez MCP Server")
 
@@ -13,34 +12,12 @@ mcp.tool(get_profile)
 mcp.tool(get_results)
 mcp.tool(get_result)
 
+mcp_app = mcp.http_app(path="/mcp", transport="streamable-http")
 
-async def run_manager():
-    config = uvicorn.Config(
-        app=app,
-        host=rez_config.mcp_auth_host,
-        port=rez_config.mcp_auth_port,
-        log_level="info",
-    )
-    server = uvicorn.Server(config)
-    await server.serve()
-
-
-async def run_mcp():
-    MCP_MODE = rez_config.mcp_mode
-    if MCP_MODE == "stdio":
-        await mcp.run_async(transport="stdio", show_banner=False)
-    elif MCP_MODE == "http":
-        await mcp.run_async(
-            transport="http",
-            host=rez_config.mcp_host,
-            port=rez_config.mcp_port,
-            show_banner=False,
-        )
-
-
-async def run_services():
-    await asyncio.gather(run_manager(), run_mcp())
-
-
-if __name__ == "__main__":
-    asyncio.run(run_services())
+app = Starlette(
+    routes=[
+        Mount("/rez", app=mcp_app),
+        Mount("/", app=auth_app)
+    ],
+    lifespan=mcp_app.lifespan
+)

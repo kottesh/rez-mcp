@@ -29,15 +29,15 @@ class LoginCreds(BaseModel):
 
 sessions: dict[str, SessionData] = {}
 
-app = FastAPI()
+auth_app = FastAPI()
 
 
-@app.get("/")
+@auth_app.get("/")
 async def root() -> str:
     return "Rez MCP Server"
 
 
-@app.get("/auth/login")
+@auth_app.get("/auth/login")
 async def login_page(request: Request, session_id: str | None = None) -> HTMLResponse:
     if session_id is None or session_id not in sessions:
         return HTMLResponse(content="Invalid Session", status_code=400)
@@ -55,7 +55,7 @@ async def login_page(request: Request, session_id: str | None = None) -> HTMLRes
     )
 
 
-@app.post("/auth/login")
+@auth_app.post("/auth/login")
 async def authorize(session_id: str, creds: LoginCreds) -> JSONResponse:
     if session_id not in sessions:
         logger.error(f"Invalid session Id {session_id} during authorization")
@@ -86,7 +86,7 @@ async def authorize(session_id: str, creds: LoginCreds) -> JSONResponse:
             # If we get a 200 OK, it means the login page was re-rendered,
             # likely with an error message.
             if response.status_code == 200:
-                logger.warning(f"Login failed, received 200 OK. Body: {response.text}")
+                logger.warning("Login failed, received 200 OK. Body")
                 if "student login" in response.text.lower():
                     raise HTTPException(
                         detail="Incorrect username or password", status_code=401

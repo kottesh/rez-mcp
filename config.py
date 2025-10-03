@@ -13,12 +13,8 @@ def _get_env(var: str, default=None):
 
 class REZConfig:
     def __init__(self):
-        self.mcp_host = _get_env("MCP_HOST")
-        self.mcp_port = int(_get_env("MCP_PORT"))
         self.cit_base_url = _get_env("CIT_BASE_URL")
-        self.mcp_mode = _get_env("MCP_MODE", "http")
-        self.mcp_auth_host = _get_env("MCP_AUTH_HOST")
-        self.mcp_auth_port = int(_get_env("MCP_AUTH_PORT"))
+        self.rez_base_url = _get_env("REZ_BASE_URL")
 
 
 rez_config = REZConfig()
