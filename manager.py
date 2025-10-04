@@ -10,6 +10,8 @@ from pydantic import BaseModel, SecretStr
 import re
 from utils import call
 from io import BytesIO
+import asyncio
+from contextlib import asynccontextmanager
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +24,7 @@ class SessionData:
         self.session_id: str = session_id
         self.cookie: str = cookie
         self.createdAt: datetime = datetime.now()
-        self.expiresAt: datetime = datetime.now() + timedelta(hours=1)
+        self.expiresAt: datetime = datetime.now() + timedelta(minutes=30)
 
 
 class LoginCreds(BaseModel):
@@ -31,6 +33,30 @@ class LoginCreds(BaseModel):
 
 
 sessions: dict[str, SessionData] = {}
+
+
+async def session_cleanup():
+    while True:
+        now = datetime.now()
+        logger.info(f"Running regular cleanup at {now}")
+        expired = [sid for sid, data in sessions.items() if data and now > data.expiresAt]
+
+        if expired:
+            for sid in expired:
+                del sessions[sid]
+            logger.info(f"Cleaned up {len(expired)} sessions.")
+        else:
+            logger.info("No expired sessions to be cleaned up.")
+
+        await asyncio.sleep(600)
+
+
+@asynccontextmanager
+async def auth_lifespan(app):
+    task = asyncio.create_task(session_cleanup())
+    yield
+    task.cancel()
+
 
 auth_app = FastAPI()
 
