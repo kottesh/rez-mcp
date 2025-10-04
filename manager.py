@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.exceptions import HTTPException
 import logging
@@ -8,6 +8,8 @@ import httpx
 from config import rez_config
 from pydantic import BaseModel, SecretStr
 import re
+from utils import call
+from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +17,8 @@ templates = Jinja2Templates(directory="templates")
 
 
 class SessionData:
-    def __init__(self, session_id: str, cookie: str):
+    def __init__(self, roll_no: str, session_id: str, cookie: str):
+        self.register_no: str = roll_no
         self.session_id: str = session_id
         self.cookie: str = cookie
         self.createdAt: datetime = datetime.now()
@@ -119,7 +122,9 @@ async def authorize(session_id: str, creds: LoginCreds) -> JSONResponse:
                 )
             cookie = cookie_match.group(1).strip()
 
-            sessions[session_id] = SessionData(session_id=session_id, cookie=cookie)
+            sessions[session_id] = SessionData(
+                roll_no=creds.username, session_id=session_id, cookie=cookie
+            )
 
             return JSONResponse(content={"message": "Login Ok!"}, status_code=200)
 
@@ -145,3 +150,51 @@ async def authorize(session_id: str, creds: LoginCreds) -> JSONResponse:
                 content={"error": "An unexpected internal error occurred."},
                 status_code=500,
             )
+
+
+@auth_app.get("/pdf/result")
+async def generate_result(session_id: str, exam_code: str) -> StreamingResponse:
+    if session_id not in sessions:
+        return HTMLResponse(content="Invalid Session", status_code=400)
+
+    register_no = sessions[session_id].register_no
+    cookie = sessions[session_id].cookie
+    result_pdf = await call(
+        "/exam/result.php",
+        {"exam_cd": exam_code},
+        addtional_headers={"Cookie": cookie},
+        return_bytes=True,
+    )
+    result_pdf = BytesIO(result_pdf)
+
+    return StreamingResponse(
+        result_pdf,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"inline; filename=RESULT_{register_no}_{exam_code}.pdf"
+        },
+    )
+
+
+@auth_app.get("/pdf/hallticket")
+async def generate_hallticket(session_id: str, exam_code: str) -> StreamingResponse:
+    if session_id not in sessions:
+        return HTMLResponse(content="Invalid Session", status_code=400)
+
+    register_no = sessions[session_id].register_no
+    cookie = sessions[session_id].cookie
+    result_pdf = await call(
+        "/exam/rpt_exam_hallticket.php",
+        {"exam_cd": exam_code},
+        addtional_headers={"Cookie": cookie},
+        return_bytes=True,
+    )
+    result_pdf = BytesIO(result_pdf)
+
+    return StreamingResponse(
+        result_pdf,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"inline; filename=HT_{register_no}_{exam_code}.pdf"
+        },
+    )

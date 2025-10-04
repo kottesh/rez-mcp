@@ -3,6 +3,7 @@ from manager import sessions
 import logging
 from config import rez_config
 from utils import call
+from tools.utils import get_session
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ async def login(ctx: Context) -> str:
 
     sessions[mcp_session_id] = None
 
-    return f"Follow the link to login: {rez_config.rez_base_url}/auth/login?session_id={mcp_session_id}"
+    return f"[Click here to login]({rez_config.rez_base_url}/auth/login?session_id={mcp_session_id})"
 
 
 async def get_profile(ctx: Context) -> dict:
@@ -48,13 +49,8 @@ async def get_profile(ctx: Context) -> dict:
         Exception: If the user is not logged in or if the API call fails.
     """
 
-    session_id = ctx.session_id
-    if sessions.get(session_id) is None:
-        raise Exception("User not logged in, login to continue.")
-
-    data = await call(
-        "/personal.php", addtional_headers={"Cookie": sessions[session_id].cookie}
-    )
+    session = get_session(ctx)
+    data = await call("/personal.php", addtional_headers={"Cookie": session.cookie})
 
     sp = BeautifulSoup(data, "html.parser")
     tables = sp.find("td", attrs={"align": "center"}).parent.find_all("table")
