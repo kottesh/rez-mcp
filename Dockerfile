@@ -12,4 +12,4 @@ COPY . .
 
 EXPOSE 5432
 
-CMD ["uv", "run", "uvicorn", "--host", "0.0.0.0", "--port", "5432", "--workers", "4", "main:app"]
+CMD ["uv", "run", "uvicorn", "--host", "0.0.0.0", "--port", "5432", "main:app"]
