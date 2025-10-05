@@ -1,7 +1,6 @@
 from fastmcp import Context
 import logging
 from utils import call
-from tools.utils import get_session
 from bs4 import BeautifulSoup
 from pypdf import PdfReader
 from io import BytesIO
@@ -22,7 +21,7 @@ async def get_results(ctx: Context) -> list:
         Exception: If the user is not logged in or if the API call fails.
     """
 
-    session = get_session(ctx)
+    session = ctx.get_state("session")
     data = await call(
         "/exam/exam_result.php",
         addtional_headers={"Cookie": session.cookie},
@@ -46,7 +45,7 @@ async def get_result(ctx: Context, exam_code: str) -> dict:
         Exception: If the user is not logged in or if the API call fails.
     """
 
-    session = get_session(ctx)
+    session = ctx.get_state("session")
     data = await call(
         "/exam/exam_result.php",
         addtional_headers={"Cookie": session.cookie},
@@ -93,7 +92,7 @@ async def get_result(ctx: Context, exam_code: str) -> dict:
 
 async def download_result(ctx: Context, exam_code: str) -> str:
     """
-    Generates the result PDF by `exam_code`
+    Generates result PDF by `exam_code`
 
     Returns
         str: Result PDF downloadable link
@@ -102,5 +101,5 @@ async def download_result(ctx: Context, exam_code: str) -> str:
         Exception: If the user is not logged in.
     """
 
-    session = get_session(ctx)
+    session = ctx.get_state("session")
     return f"[Click here to download result]({rez_config.rez_base_url}/pdf/result?session_id={session.session_id}&exam_code={exam_code})"

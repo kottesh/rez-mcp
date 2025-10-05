@@ -3,7 +3,6 @@ from manager import sessions
 import logging
 from config import rez_config
 from utils import call
-from tools.utils import get_session
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
@@ -49,7 +48,7 @@ async def get_profile(ctx: Context) -> dict:
         Exception: If the user is not logged in or if the API call fails.
     """
 
-    session = get_session(ctx)
+    session = ctx.get_state("session")
     data = await call("/personal.php", addtional_headers={"Cookie": session.cookie})
 
     sp = BeautifulSoup(data, "html.parser")

@@ -24,7 +24,7 @@ class SessionData:
         self.session_id: str = session_id
         self.cookie: str = cookie
         self.createdAt: datetime = datetime.now()
-        self.expiresAt: datetime = datetime.now() + timedelta(minutes=30)
+        self.expiresAt: datetime = datetime.now() + timedelta(minutes=15)
 
 
 class LoginCreds(BaseModel):
@@ -39,7 +39,9 @@ async def session_cleanup():
     while True:
         now = datetime.now()
         logger.info(f"Running regular cleanup at {now}")
-        expired = [sid for sid, data in sessions.items() if data and now > data.expiresAt]
+        expired = [
+            sid for sid, data in sessions.items() if data and now > data.expiresAt
+        ]
 
         if expired:
             for sid in expired:
@@ -48,25 +50,25 @@ async def session_cleanup():
         else:
             logger.info("No expired sessions to be cleaned up.")
 
-        await asyncio.sleep(600)
+        await asyncio.sleep(600) # sleep for 10 minutes
 
 
 @asynccontextmanager
-async def auth_lifespan(app):
+async def rez_lifespan(app):
     task = asyncio.create_task(session_cleanup())
     yield
     task.cancel()
 
 
-auth_app = FastAPI()
+rez_app = FastAPI()
 
 
-@auth_app.get("/")
+@rez_app.get("/")
 async def root() -> str:
     return "Rez MCP Server"
 
 
-@auth_app.get("/auth/login")
+@rez_app.get("/auth/login")
 async def login_page(request: Request, session_id: str | None = None) -> HTMLResponse:
     if session_id is None or session_id not in sessions:
         return HTMLResponse(content="Invalid Session", status_code=400)
@@ -84,7 +86,7 @@ async def login_page(request: Request, session_id: str | None = None) -> HTMLRes
     )
 
 
-@auth_app.post("/auth/login")
+@rez_app.post("/auth/login")
 async def authorize(session_id: str, creds: LoginCreds) -> JSONResponse:
     if session_id not in sessions:
         logger.error(f"Invalid session Id {session_id} during authorization")
@@ -178,12 +180,12 @@ async def authorize(session_id: str, creds: LoginCreds) -> JSONResponse:
             )
 
 
-@auth_app.get("/pdf/result")
+@rez_app.get("/pdf/result")
 async def generate_result(session_id: str, exam_code: str) -> StreamingResponse:
     if session_id not in sessions:
         return HTMLResponse(content="Invalid Session", status_code=400)
 
-    register_no = sessions[session_id].register_no
+    register_no = sessions[session_id].register_no.replace(" ", "")
     cookie = sessions[session_id].cookie
     result_pdf = await call(
         "/exam/result.php",
@@ -202,12 +204,12 @@ async def generate_result(session_id: str, exam_code: str) -> StreamingResponse:
     )
 
 
-@auth_app.get("/pdf/hallticket")
+@rez_app.get("/pdf/hallticket")
 async def generate_hallticket(session_id: str, exam_code: str) -> StreamingResponse:
     if session_id not in sessions:
         return HTMLResponse(content="Invalid Session", status_code=400)
 
-    register_no = sessions[session_id].register_no
+    register_no = sessions[session_id].register_no.replace(" ", "")
     cookie = sessions[session_id].cookie
     result_pdf = await call(
         "/exam/rpt_exam_hallticket.php",

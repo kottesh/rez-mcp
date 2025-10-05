@@ -2,7 +2,6 @@ from fastmcp import Context
 from utils import call
 from bs4 import BeautifulSoup
 from pydantic import Field
-from tools.utils import get_session
 from config import rez_config
 
 
@@ -17,7 +16,7 @@ async def get_halltickets(ctx: Context) -> list[str]:
         Exception: If the user is not logged in or API call fails
     """
 
-    session = get_session(ctx)
+    session = ctx.get_state("session")
     response = await call(
         "/exam/param_exam_hallticket.php", addtional_headers={"Cookie": session.cookie}
     )
@@ -45,5 +44,5 @@ async def download_hallticket(
         Exception: If the user is not found or if the API calls.
     """
 
-    session = get_session(ctx)
+    session = ctx.get_state("session")
     return f"[Click here to download hallticket]({rez_config.rez_base_url}/pdf/hallticket?session_id={session.session_id}&exam_code={exam_code})"
