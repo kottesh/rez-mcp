@@ -217,6 +217,7 @@ async def authorize(request: Request, token: str, creds: LoginCreds) -> JSONResp
                 status_code=500,
             )
 
+
 @rez_app.get("/pdf/result")
 async def generate_result(request: Request, token: str) -> StreamingResponse:
     data, valid = verify_token(token)
@@ -231,7 +232,6 @@ async def generate_result(request: Request, token: str) -> StreamingResponse:
                 "error_message": data,
             },
         )
-
 
     session_id, exam_code = data.split(":")
     session = sessions.get(session_id)
