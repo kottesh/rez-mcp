@@ -74,7 +74,15 @@ async def login_page(request: Request, token: str | None = None) -> HTMLResponse
     data, valid = verify_token(token)
 
     if not valid:
-        return HTMLResponse(content=data, status_code=401)
+        return templates.TemplateResponse(
+            request=request,
+            name="error.html",
+            context={
+                "status_code": "401",
+                "error_title": "Oh ohhhhh!",
+                "error_message": data,
+            },
+        )
 
     session_id = data
     session = sessions.get(session_id)
@@ -82,9 +90,25 @@ async def login_page(request: Request, token: str | None = None) -> HTMLResponse
     if session:
         if datetime.now() > session.expiresAt:
             del sessions[session_id]
-            return HTMLResponse(content="Session expired!", status_code=200)
+            return templates.TemplateResponse(
+                request=request,
+                name="error.html",
+                context={
+                    "status_code": "401",
+                    "error_title": "Your session has expired",
+                    "error_message": "You've been away too long and our dancing cat missed you! Please log back in to continue your session.",
+                },
+            )
 
-        return HTMLResponse(content="You are already logged in!", status_code=200)
+        return templates.TemplateResponse(
+            request=request,
+            name="error.html",
+            context={
+                "status_code": "401",
+                "error_title": "Wait, you're already here!",
+                "error_message": "Trying to log in again? Our dancing cat says you're already signed in and ready to go!",
+            },
+        )
 
     return templates.TemplateResponse(
         request=request, name="login.html", context={"token": token}
@@ -92,11 +116,19 @@ async def login_page(request: Request, token: str | None = None) -> HTMLResponse
 
 
 @rez_app.post("/auth/login")
-async def authorize(token: str, creds: LoginCreds) -> JSONResponse:
+async def authorize(request: Request, token: str, creds: LoginCreds) -> JSONResponse:
     data, valid = verify_token(token)
 
     if not valid:
-        return HTMLResponse(content=data, status_code=401)
+        return templates.TemplateResponse(
+            request=request,
+            name="error.html",
+            context={
+                "status_code": "401",
+                "error_title": "Oh ohhhhh!",
+                "error_message": data,
+            },
+        )
 
     session_id = data
 
@@ -185,13 +217,21 @@ async def authorize(token: str, creds: LoginCreds) -> JSONResponse:
                 status_code=500,
             )
 
-
 @rez_app.get("/pdf/result")
-async def generate_result(token: str) -> StreamingResponse:
+async def generate_result(request: Request, token: str) -> StreamingResponse:
     data, valid = verify_token(token)
 
     if not valid:
-        return HTMLResponse(content=data, status_code=401)
+        return templates.TemplateResponse(
+            request=request,
+            name="error.html",
+            context={
+                "status_code": "401",
+                "error_title": "Oh ohhhhh!",
+                "error_message": data,
+            },
+        )
+
 
     session_id, exam_code = data.split(":")
     session = sessions.get(session_id)
@@ -200,7 +240,15 @@ async def generate_result(token: str) -> StreamingResponse:
         logger.info(
             f"No session found with ID {session_id}. May be the user logged out."
         )
-        return HTMLResponse(content="Are you logged in ?", status_code=401)
+        return templates.TemplateResponse(
+            request=request,
+            name="error.html",
+            context={
+                "status_code": "401",
+                "error_title": "Are you logged in ?",
+                "error_message": "Oops! Your session decided to take a catnap. Time to log back in and wake it up!",
+            },
+        )
 
     register_no = session.register_no.replace(" ", "")
     cookie = session.cookie
@@ -222,11 +270,19 @@ async def generate_result(token: str) -> StreamingResponse:
 
 
 @rez_app.get("/pdf/hallticket")
-async def generate_hallticket(token: str) -> StreamingResponse:
+async def generate_hallticket(request: Request, token: str) -> StreamingResponse:
     data, valid = verify_token(token)
 
     if not valid:
-        return HTMLResponse(content=data, status_code=401)
+        return templates.TemplateResponse(
+            request=request,
+            name="error.html",
+            context={
+                "status_code": "401",
+                "error_title": "Oh ohhhhh!",
+                "error_message": data,
+            },
+        )
 
     session_id, exam_code = data.split(":")
     session = sessions.get(session_id)
@@ -235,7 +291,15 @@ async def generate_hallticket(token: str) -> StreamingResponse:
         logger.info(
             f"No session found with ID {session_id}. May be the user logged out."
         )
-        return HTMLResponse(content="Are you logged in ?", status_code=401)
+        return templates.TemplateResponse(
+            request=request,
+            name="error.html",
+            context={
+                "status_code": "401",
+                "error_title": "Are you logged in ?",
+                "error_message": "Oops! Your session decided to take a catnap. Time to log back in and wake it up!",
+            },
+        )
 
     register_no = session.register_no.replace(" ", "")
     cookie = session.cookie
