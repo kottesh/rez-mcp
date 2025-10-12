@@ -5,7 +5,8 @@ from bs4 import BeautifulSoup
 from pypdf import PdfReader
 from io import BytesIO
 import re
-from config import rez_config
+from config import REZConfig
+from signer import generate_token
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +21,11 @@ async def get_results(ctx: Context) -> list:
     Raises:
         Exception: If the user is not logged in or if the API call fails.
     """
-
     session = ctx.get_state("session")
+    logger.info(
+        f"`get_results` tool called with Session id {session.session_id} | Register No: {session.register_no}"
+    )
+
     data = await call(
         "/exam/exam_result.php",
         addtional_headers={"Cookie": session.cookie},
@@ -46,6 +50,10 @@ async def get_result(ctx: Context, exam_code: str) -> dict:
     """
 
     session = ctx.get_state("session")
+    logger.info(
+        f"`get_result` tool called with Session id {session.session_id} | Register No: {session.register_no}"
+    )
+
     data = await call(
         "/exam/exam_result.php",
         addtional_headers={"Cookie": session.cookie},
@@ -57,6 +65,9 @@ async def get_result(ctx: Context, exam_code: str) -> dict:
     }
 
     if exam_code not in exam_codes.keys():
+        logger.info(
+            f"Invalid exam code {exam_code} | Session ID {session.session_id} | Register No {session.register_no}"
+        )
         raise Exception(
             f"Invalid exam code {exam_code}. Available valid exam codes: {', '.join(exam_codes.keys())}"
         )
@@ -95,11 +106,21 @@ async def download_result(ctx: Context, exam_code: str) -> str:
     Generates result PDF by `exam_code`
 
     Returns
-        str: Result PDF downloadable link
+        str: Result PDF downloadable link(Valid only for 10 minutes )
 
     Raises:
         Exception: If the user is not logged in.
     """
 
     session = ctx.get_state("session")
-    return f"[Click here to download result]({rez_config.rez_base_url}/pdf/result?session_id={session.session_id}&exam_code={exam_code})"
+    logger.info(
+        f"`get_result` tool called with Session id {session.session_id} | Register No: {session.register_no}"
+    )
+
+    token = generate_token(f"{session.session_id}:{exam_code}")
+
+    logger.info(
+        f"Result download token generated | Session ID: {session.session_id} | Register No: {session.register_no}"
+    )
+
+    return f"[Click here to download result]({REZConfig.REZ_BASE_URL}/pdf/result?token={token})"

@@ -12,9 +12,6 @@ def _get_env(var: str, default=None):
 
 
 class REZConfig:
-    def __init__(self):
-        self.cit_base_url = _get_env("CIT_BASE_URL")
-        self.rez_base_url = _get_env("REZ_BASE_URL")
-
-
-rez_config = REZConfig()
+    CIT_BASE_URL = _get_env("CIT_BASE_URL")
+    REZ_BASE_URL = _get_env("REZ_BASE_URL")
+    SECRET_KEY = os.urandom(32)

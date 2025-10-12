@@ -2,7 +2,11 @@ from fastmcp import Context
 from utils import call
 from bs4 import BeautifulSoup
 from pydantic import Field
-from config import rez_config
+from config import REZConfig
+from signer import generate_token
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def get_halltickets(ctx: Context) -> list[str]:
@@ -17,6 +21,10 @@ async def get_halltickets(ctx: Context) -> list[str]:
     """
 
     session = ctx.get_state("session")
+    logger.info(
+        f"`get_halltickets` tool called with Session id {session.session_id} | Register No: {session.register_no}"
+    )
+
     response = await call(
         "/exam/param_exam_hallticket.php", addtional_headers={"Cookie": session.cookie}
     )
@@ -38,11 +46,20 @@ async def download_hallticket(
     Generates Hallticket PDF by `exam_code`
 
     Returns:
-        str: Downloadable Hallticket PDF link.
+        str: Downloadable Hallticket PDF link.(Valid only for 10 minutes)
 
     Rasies:
         Exception: If the user is not found or if the API calls.
     """
 
     session = ctx.get_state("session")
-    return f"[Click here to download hallticket]({rez_config.rez_base_url}/pdf/hallticket?session_id={session.session_id}&exam_code={exam_code})"
+    logger.info(
+        f"`download_hallticket` tool called with Session id {session.session_id} | Register No: {session.register_no}"
+    )
+
+    token = generate_token(f"{session.session_id}:{exam_code}")
+    logger.info(
+        f"Hallticket download token generated | Session ID: {session.session_id} | Register No: {session.register_no}"
+    )
+
+    return f"[Click here to download hallticket]({REZConfig.REZ_BASE_URL}/pdf/hallticket?token={token})"

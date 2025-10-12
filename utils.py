@@ -1,6 +1,6 @@
 import httpx
 import logging
-from config import rez_config
+from config import REZConfig
 
 logger = logging.getLogger(__name__)
 
@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 async def post(api_url: str, payload: dict) -> dict:
     async with httpx.AsyncClient(
         timeout=30,
-        base_url=rez_config.cit_base_url,
+        base_url=REZConfig.CIT_BASE_URL,
         verify=False,
         follow_redirects=False,
     ) as client:
@@ -26,7 +26,7 @@ async def post(api_url: str, payload: dict) -> dict:
             raise Exception(f"API HTTPError: ({status_code}) : {content}") from e
 
         except Exception as e:
-            logger.error(f"Error during API call: {str(e)}")
+            logger.error(f"Failed during an API call: {str(e)}")
             raise Exception(f"Failed to call API {str(e)}") from e
 
 
@@ -38,7 +38,7 @@ async def call(
 ):
     async with httpx.AsyncClient(
         timeout=30,
-        base_url=rez_config.cit_base_url,
+        base_url=REZConfig.CIT_BASE_URL,
         verify=False,
         headers={
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0"
@@ -62,5 +62,5 @@ async def call(
             raise Exception(f"API HTTPError: ({status_code}) : {content}") from e
 
         except Exception as e:
-            logger.error(f"Error during API call: {str(e)}")
+            logger.error(f"Failed during an API call: {str(e)}")
             raise Exception(f"Failed to call API {str(e)}") from e

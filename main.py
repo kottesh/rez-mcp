@@ -1,5 +1,5 @@
 from fastmcp import FastMCP
-from tools.setup import login, get_profile
+from tools.setup import login, logout, get_profile
 from tools.results import get_results, get_result, download_result
 from tools.hallticket import get_halltickets, download_hallticket
 from manager import rez_app, rez_lifespan, sessions
@@ -52,6 +52,7 @@ mcp = FastMCP(name="Rez MCP Server")
 mcp.add_middleware(AuthMiddleware())
 
 mcp.tool(login)
+mcp.tool(logout)
 mcp.tool(get_profile)
 mcp.tool(get_results)
 mcp.tool(get_result)

@@ -287,7 +287,7 @@
             const form = document.getElementById("loginForm");
             const messageContainer = document.getElementById("messageContainer");
             const notification = document.getElementById("notification");
-            const sessionId = "{{ session_id }}";
+            const token = "{{ token }}";
 
             function showNotification(message, type) {
                 notification.textContent = message;
@@ -330,7 +330,7 @@
                     .value
                     .trim();
 
-                fetch(`/auth/login?session_id=${sessionId}`, {
+                fetch(`/auth/login?token=${token}`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ username, password }),

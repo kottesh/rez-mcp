@@ -1,7 +1,7 @@
 [project]
 name = "rez"
 version = "0.1.0"
-description = "CIT Results MCP Server"
+description = "Rez MCP Server for CIT results site"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [

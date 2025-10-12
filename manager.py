@@ -5,13 +5,14 @@ from fastapi.templating import Jinja2Templates
 from fastapi.exceptions import HTTPException
 import logging
 import httpx
-from config import rez_config
+from config import REZConfig
 from pydantic import BaseModel, SecretStr
 import re
 from utils import call
 from io import BytesIO
 import asyncio
 from contextlib import asynccontextmanager
+from signer import verify_token
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ async def session_cleanup():
         else:
             logger.info("No expired sessions to be cleaned up.")
 
-        await asyncio.sleep(600) # sleep for 10 minutes
+        await asyncio.sleep(600)  # sleep for 10 minutes
 
 
 @asynccontextmanager
@@ -69,33 +70,38 @@ async def root() -> str:
 
 
 @rez_app.get("/auth/login")
-async def login_page(request: Request, session_id: str | None = None) -> HTMLResponse:
-    if session_id is None or session_id not in sessions:
-        return HTMLResponse(content="Invalid Session", status_code=400)
+async def login_page(request: Request, token: str | None = None) -> HTMLResponse:
+    data, valid = verify_token(token)
 
+    if not valid:
+        return HTMLResponse(content=data, status_code=401)
+
+    session_id = data
     session = sessions.get(session_id)
+
     if session:
-        if session.expiresAt < datetime.now():
+        if datetime.now() > session.expiresAt:
             del sessions[session_id]
             return HTMLResponse(content="Session expired!", status_code=200)
 
         return HTMLResponse(content="You are already logged in!", status_code=200)
 
     return templates.TemplateResponse(
-        request=request, name="login.html", context={"session_id": session_id}
+        request=request, name="login.html", context={"token": token}
     )
 
 
 @rez_app.post("/auth/login")
-async def authorize(session_id: str, creds: LoginCreds) -> JSONResponse:
-    if session_id not in sessions:
-        logger.error(f"Invalid session Id {session_id} during authorization")
-        return JSONResponse(
-            content={"error": f"Invalid session Id {session_id}"}, status_code=400
-        )
+async def authorize(token: str, creds: LoginCreds) -> JSONResponse:
+    data, valid = verify_token(token)
+
+    if not valid:
+        return HTMLResponse(content=data, status_code=401)
+
+    session_id = data
 
     with httpx.Client(
-        base_url=rez_config.cit_base_url,
+        base_url=REZConfig.CIT_BASE_URL,
         timeout=15.0,
         follow_redirects=False,
         verify=False,
@@ -181,12 +187,23 @@ async def authorize(session_id: str, creds: LoginCreds) -> JSONResponse:
 
 
 @rez_app.get("/pdf/result")
-async def generate_result(session_id: str, exam_code: str) -> StreamingResponse:
-    if session_id not in sessions:
-        return HTMLResponse(content="Invalid Session", status_code=400)
+async def generate_result(token: str) -> StreamingResponse:
+    data, valid = verify_token(token)
 
-    register_no = sessions[session_id].register_no.replace(" ", "")
-    cookie = sessions[session_id].cookie
+    if not valid:
+        return HTMLResponse(content=data, status_code=401)
+
+    session_id, exam_code = data.split(":")
+    session = sessions.get(session_id)
+
+    if not session:
+        logger.info(
+            f"No session found with ID {session_id}. May be the user logged out."
+        )
+        return HTMLResponse(content="Are you logged in ?", status_code=401)
+
+    register_no = session.register_no.replace(" ", "")
+    cookie = session.cookie
     result_pdf = await call(
         "/exam/result.php",
         {"exam_cd": exam_code},
@@ -205,12 +222,23 @@ async def generate_result(session_id: str, exam_code: str) -> StreamingResponse:
 
 
 @rez_app.get("/pdf/hallticket")
-async def generate_hallticket(session_id: str, exam_code: str) -> StreamingResponse:
-    if session_id not in sessions:
-        return HTMLResponse(content="Invalid Session", status_code=400)
+async def generate_hallticket(token: str) -> StreamingResponse:
+    data, valid = verify_token(token)
 
-    register_no = sessions[session_id].register_no.replace(" ", "")
-    cookie = sessions[session_id].cookie
+    if not valid:
+        return HTMLResponse(content=data, status_code=401)
+
+    session_id, exam_code = data.split(":")
+    session = sessions.get(session_id)
+
+    if not session:
+        logger.info(
+            f"No session found with ID {session_id}. May be the user logged out."
+        )
+        return HTMLResponse(content="Are you logged in ?", status_code=401)
+
+    register_no = session.register_no.replace(" ", "")
+    cookie = session.cookie
     result_pdf = await call(
         "/exam/rpt_exam_hallticket.php",
         {"exam_cd": exam_code},
