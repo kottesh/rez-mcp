@@ -104,7 +104,7 @@ async def login_page(request: Request, token: str | None = None) -> HTMLResponse
             request=request,
             name="error.html",
             context={
-                "status_code": "401",
+                "status_code": "200",
                 "error_title": "Wait, you're already here!",
                 "error_message": "Trying to log in again? Our dancing cat says you're already signed in and ready to go!",
             },

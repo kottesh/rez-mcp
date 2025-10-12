@@ -9,7 +9,10 @@ uvicorn --host 0.0.0.0 --port 5432 main:app
 
 Add streamable-http mcp to your chat client.
 
-If you can't wait to try it out, you could try using the hosted rez mcp server [https://mcp.kottesh.xyz/rez/mcp](https://mcp.kottesh.xyz/rez/mcp)
+You can even skip the installation steps and try using the hosted REZ MCP Server instead [https://mcp.kottesh.xyz/rez/mcp](https://mcp.kottesh.xyz/rez/mcp)
 
 ## Demo
-![](https://cdn.kottesh.xyz/f/df414b496e9a.gif)
+
+<video width=auto height=auto controls>
+    <source src="https://cdn.kottesh.xyz/f/2025-10-03_22-48-11.mp4" type="video/mp4">
+</video>
