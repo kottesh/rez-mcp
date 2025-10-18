@@ -13,6 +13,4 @@ You can even skip the installation steps and try using the hosted REZ MCP Server
 
 ## Demo
 
-<video width=auto height=auto controls>
-    <source src="https://cdn.kottesh.xyz/f/2025-10-03_22-48-11.mp4" type="video/mp4">
-</video>
+https://github.com/user-attachments/assets/421a1889-1f03-4abe-bf42-977b4546736c
