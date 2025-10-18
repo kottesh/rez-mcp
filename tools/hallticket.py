@@ -9,7 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-async def get_halltickets(ctx: Context) -> list[str]:
+async def get_halltickets(ctx: Context) -> list[str] | str:
     """
     Retrieves a list of available halltickets code
 
@@ -31,9 +31,15 @@ async def get_halltickets(ctx: Context) -> list[str]:
     sp = BeautifulSoup(response, "html.parser")
 
     input_tags = sp.find_all("input", {"id": "exam_cd"})
-    halltickets = list(set(map(lambda tag: tag.get("value"), input_tags)))
+    exam_codes = [
+        exam_code for tag in input_tags if (exam_code := tag.get("value", "").strip())
+    ]
 
-    return halltickets
+    if not exam_codes:
+        logger.info(f"No halltickets are available | Session ID: {session.session_id}")
+        return "Currently no halltickets are available."
+
+    return exam_codes
 
 
 async def download_hallticket(
@@ -56,6 +62,20 @@ async def download_hallticket(
     logger.info(
         f"`download_hallticket` tool called with Session id {session.session_id} | Register No: {session.register_no}"
     )
+
+    response = await call(
+        "/exam/param_exam_hallticket.php", addtional_headers={"Cookie": session.cookie}
+    )
+    sp = BeautifulSoup(response, "html.parser")
+
+    input_tags = sp.find_all("input", {"id": "exam_cd"})
+    exam_codes = [
+        exam_code for tag in input_tags if (exam_code := tag.get("value", "").strip())
+    ]
+
+    if not exam_codes:
+        logger.info(f"No halltickets are available | Session ID: {session.session_id}")
+        return "Currently no halltickets are available."
 
     token = generate_token(f"{session.session_id}:{exam_code}")
     logger.info(

@@ -5,6 +5,7 @@ import time
 import base64
 from typing import Tuple
 import logging
+from data import blacklist_tokens
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,10 @@ def generate_token(data: str, expiry_in: int = 600) -> str:
 
 def verify_token(token: str) -> Tuple[str, bool]:
     try:
+        if token in blacklist_tokens:
+            logger.warning(f"Token reuse detected: {token}")
+            return "Token is no longer valid.", False
+
         decoded = base64.urlsafe_b64decode(token.encode()).decode()
 
         payload, signature = decoded.rsplit(".", 1)

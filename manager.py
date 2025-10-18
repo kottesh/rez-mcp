@@ -13,6 +13,7 @@ from io import BytesIO
 import asyncio
 from contextlib import asynccontextmanager
 from signer import verify_token
+from data import sessions, blacklist_tokens
 
 logger = logging.getLogger(__name__)
 
@@ -33,32 +34,54 @@ class LoginCreds(BaseModel):
     password: SecretStr
 
 
-sessions: dict[str, SessionData] = {}
-
-
 async def session_cleanup():
     while True:
-        now = datetime.now()
-        logger.info(f"Running regular cleanup at {now}")
-        expired = [
-            sid for sid, data in sessions.items() if data and now > data.expiresAt
-        ]
+        try:
+            now = datetime.now()
+            logger.info(f"Running regular cleanup at {now}")
+            expired = [
+                sid for sid, data in sessions.items() if data and now > data.expiresAt
+            ]
 
-        if expired:
-            for sid in expired:
-                del sessions[sid]
-            logger.info(f"Cleaned up {len(expired)} sessions.")
-        else:
-            logger.info("No expired sessions to be cleaned up.")
+            if expired:
+                for sid in expired:
+                    del sessions[sid]
+                logger.info(f"Cleaned up {len(expired)} sessions.")
+            else:
+                logger.info("No expired sessions to be cleaned up.")
 
-        await asyncio.sleep(600)  # sleep for 10 minutes
+            await asyncio.sleep(600)  # sleep for 10 minutes
+
+        except asyncio.CancelledError:
+            break
+
+
+async def remove_blacklist_tokens():
+    while True:
+        try:
+            blacklist_len = len(blacklist_tokens)
+
+            if blacklist_len == 0:
+                logger.info("No blacklisted tokens to clean up.")
+            else:
+                logger.info(f"Cleaning {blacklist_len} blacklisted tokens")
+                blacklist_tokens.clear()
+
+            await asyncio.sleep(600)  # sleep for 10 minutes
+
+        except asyncio.CancelledError:
+            break
 
 
 @asynccontextmanager
 async def rez_lifespan(app):
-    task = asyncio.create_task(session_cleanup())
+    blacklist_cleanup_task = asyncio.create_task(remove_blacklist_tokens())
+    session_cleanup_task = asyncio.create_task(session_cleanup())
+
     yield
-    task.cancel()
+
+    blacklist_cleanup_task.cancel()
+    session_cleanup_task.cancel()
 
 
 rez_app = FastAPI()
@@ -170,6 +193,7 @@ async def authorize(request: Request, token: str, creds: LoginCreds) -> JSONResp
                 response.raise_for_status()
 
             logger.info(f"Login successful with redirect. Headers: {response.headers}")
+            blacklist_tokens.add(token)
 
             set_cookie_header = response.headers.get("set-cookie")
             if not set_cookie_header:

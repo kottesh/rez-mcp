@@ -11,7 +11,7 @@ from signer import generate_token
 logger = logging.getLogger(__name__)
 
 
-async def get_results(ctx: Context) -> list:
+async def get_results(ctx: Context) -> list | str:
     """
     Retrieves a list of available semester exam result codes from the CIT Results Site.
 
@@ -32,10 +32,16 @@ async def get_results(ctx: Context) -> list:
     )
     sp = BeautifulSoup(data, "html.parser")
 
-    return [option["value"].strip()[:-1] for option in sp.find_all("option")]
+    exam_codes = [option["value"].strip()[:-1] for option in sp.find_all("option")]
+
+    if not exam_codes:
+        logger.info("No exam_codes found.")
+        return "Currently no results are available."
+
+    return exam_codes
 
 
-async def get_result(ctx: Context, exam_code: str) -> dict:
+async def get_result(ctx: Context, exam_code: str) -> dict | str:
     """
     Retrieves the exam result using the `exam_code`.
 
@@ -63,6 +69,10 @@ async def get_result(ctx: Context, exam_code: str) -> dict:
         option["value"].strip()[:-1]: option["value"].strip()[-1]
         for option in sp.find_all("option")
     }
+
+    if not exam_codes:
+        logger.info("No exam_codes found.")
+        return "Currently no results are available."
 
     if exam_code not in exam_codes.keys():
         logger.info(
@@ -116,6 +126,20 @@ async def download_result(ctx: Context, exam_code: str) -> str:
     logger.info(
         f"`get_result` tool called with Session id {session.session_id} | Register No: {session.register_no}"
     )
+
+    data = await call(
+        "/exam/exam_result.php",
+        addtional_headers={"Cookie": session.cookie},
+    )
+    sp = BeautifulSoup(data, "html.parser")
+    exam_codes = {
+        option["value"].strip()[:-1]: option["value"].strip()[-1]
+        for option in sp.find_all("option")
+    }
+
+    if not exam_codes:
+        logger.info("No exam_codes found.")
+        return "Currently no results are available."
 
     token = generate_token(f"{session.session_id}:{exam_code}")
 
