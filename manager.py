@@ -93,7 +93,7 @@ async def root() -> str:
 
 
 @rez_app.get("/auth/login")
-async def login_page(request: Request, token: str | None = None) -> HTMLResponse:
+async def login_page(request: Request, token: str) -> HTMLResponse:
     data, valid = verify_token(token)
 
     if not valid:
@@ -133,6 +133,17 @@ async def login_page(request: Request, token: str | None = None) -> HTMLResponse
             },
         )
 
+    if token in blacklist_tokens:
+        return templates.TemplateResponse(
+            request=request,
+            name="error.html",
+            context={
+                "status_code": "401",
+                "error_title": "Login link is no longer valid.",
+                "error_message": "Our dancing cat says, login link is expired and asks you to request a new login link.",
+            },
+        )
+
     return templates.TemplateResponse(
         request=request, name="login.html", context={"token": token}
     )
@@ -143,15 +154,10 @@ async def authorize(request: Request, token: str, creds: LoginCreds) -> JSONResp
     data, valid = verify_token(token)
 
     if not valid:
-        return templates.TemplateResponse(
-            request=request,
-            name="error.html",
-            context={
-                "status_code": "401",
-                "error_title": "Oh ohhhhh!",
-                "error_message": data,
-            },
-        )
+        raise HTTPException(detail=data, status_code=401)
+
+    if token in blacklist_tokens:
+        raise HTTPException(detail="Token is no longer valid", status_code=401)
 
     session_id = data
 
@@ -198,18 +204,18 @@ async def authorize(request: Request, token: str, creds: LoginCreds) -> JSONResp
             set_cookie_header = response.headers.get("set-cookie")
             if not set_cookie_header:
                 logger.error("No set-cookie header found in the response.")
-                return JSONResponse(
-                    content={"error": "Login failed: no session cookie received."},
-                    status_code=500,
+                raise HTTPException(
+                    detail="Login failed: no session cookie received.", status_code=500
                 )
 
             cookie_match = re.match(r"([^;]+)", set_cookie_header)
             if not cookie_match:
                 logger.error(f"Could not parse cookie from header: {set_cookie_header}")
-                return JSONResponse(
-                    content={"error": "Login failed: could not parse session cookie."},
+                raise HTTPException(
+                    detail="Login failed: could not parse session cookie.",
                     status_code=500,
                 )
+
             cookie = cookie_match.group(1).strip()
 
             sessions[session_id] = SessionData(
@@ -218,27 +224,24 @@ async def authorize(request: Request, token: str, creds: LoginCreds) -> JSONResp
 
             return JSONResponse(content={"message": "Login Ok!"}, status_code=200)
 
+        except HTTPException as e:
+            raise e
         except httpx.HTTPStatusError as e:
             status_code = e.response.status_code
             content = e.response.text
             logger.error(f"HTTP Status Error: ({status_code}) - {content}")
-            return JSONResponse(
-                content={"error": f"An external service error occurred: {status_code}"},
-                status_code=502,
+            raise HTTPException(
+                detail="Auth service returned an error", status_code=502
             )
         except httpx.RequestError as e:
             logger.error(f"HTTP Request Error: {str(e)}")
-            return JSONResponse(
-                content={"error": "Could not connect to the authentication service."},
-                status_code=504,
+            raise HTTPException(
+                detail="Couldn't reach the authentication service", status_code=503
             )
-        except HTTPException as e:
-            raise e
         except Exception as e:
             logger.error(f"An unexpected error occurred during authorization: {str(e)}")
-            return JSONResponse(
-                content={"error": "An unexpected internal error occurred."},
-                status_code=500,
+            raise HTTPException(
+                detail="An unexpected internal error occurred.", status_code=500
             )
 
 
