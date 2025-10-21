@@ -17,7 +17,7 @@ from data import sessions, blacklist_tokens
 
 logger = logging.getLogger(__name__)
 
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="src/templates")
 
 
 class SessionData:

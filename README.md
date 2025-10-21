@@ -4,7 +4,7 @@ If you wanna try out REZ MCP Server. Clone the repo and install the deps with uv
 
 Then run,
 ```bash
-uvicorn --host 0.0.0.0 --port 5432 main:app
+uv run src/main.py
 ```
 
 Add streamable-http mcp to your chat client.
