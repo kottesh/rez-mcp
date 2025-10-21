@@ -2,6 +2,7 @@ from fastmcp import FastMCP
 from tools.setup import login, logout, get_profile
 from tools.results import get_results, get_result, download_result
 from tools.hallticket import get_halltickets, download_hallticket
+from config import REZConfig
 from manager import rez_app, rez_lifespan, sessions
 from starlette.applications import Starlette
 from starlette.routing import Mount
@@ -9,7 +10,9 @@ from contextlib import asynccontextmanager, AsyncExitStack
 import logging
 from fastmcp.server.middleware import Middleware, MiddlewareContext
 from datetime import datetime, timedelta
+import uvicorn
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -46,32 +49,35 @@ class AuthMiddleware(Middleware):
         return response
 
 
-logging.basicConfig(level=logging.INFO)
+def main():
+    mcp = FastMCP(name="Rez MCP Server")
+    mcp.add_middleware(AuthMiddleware())
 
-mcp = FastMCP(name="Rez MCP Server")
-mcp.add_middleware(AuthMiddleware())
+    mcp.tool(login)
+    mcp.tool(logout)
+    mcp.tool(get_profile)
+    mcp.tool(get_results)
+    mcp.tool(get_result)
+    mcp.tool(download_result)
+    mcp.tool(get_halltickets)
+    mcp.tool(download_hallticket)
 
-mcp.tool(login)
-mcp.tool(logout)
-mcp.tool(get_profile)
-mcp.tool(get_results)
-mcp.tool(get_result)
-mcp.tool(download_result)
-mcp.tool(get_halltickets)
-mcp.tool(download_hallticket)
+    rez_mcp = mcp.http_app(path="/mcp", transport="streamable-http")
+    rez_mcp_lifespan = rez_mcp.lifespan
 
-rez_mcp = mcp.http_app(path="/mcp", transport="streamable-http")
-rez_mcp_lifespan = rez_mcp.lifespan
+    @asynccontextmanager
+    async def lifespan(app):
+        async with AsyncExitStack() as stack:
+            await stack.enter_async_context(rez_mcp_lifespan(app))
+            await stack.enter_async_context(rez_lifespan(app))
+            yield
 
+    app = Starlette(
+        routes=[Mount("/rez", app=rez_mcp), Mount("/", app=rez_app)], lifespan=lifespan
+    )
 
-@asynccontextmanager
-async def lifespan(app):
-    async with AsyncExitStack() as stack:
-        await stack.enter_async_context(rez_mcp_lifespan(app))
-        await stack.enter_async_context(rez_lifespan(app))
-        yield
+    uvicorn.run(app, host=REZConfig.REZ_HOST, port=REZConfig.REZ_PORT)
 
 
-app = Starlette(
-    routes=[Mount("/rez", app=rez_mcp), Mount("/", app=rez_app)], lifespan=lifespan
-)
+if __name__ == "__main__":
+    main()

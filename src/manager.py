@@ -17,7 +17,7 @@ from data import sessions, blacklist_tokens
 
 logger = logging.getLogger(__name__)
 
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="src/templates")
 
 
 class SessionData:
@@ -94,53 +94,14 @@ async def root() -> str:
 
 @rez_app.get("/auth/login")
 async def login_page(request: Request, token: str) -> HTMLResponse:
-    data, valid = verify_token(token)
-
-    if not valid:
+    if token in blacklist_tokens or not verify_token(token)[1]:
         return templates.TemplateResponse(
             request=request,
             name="error.html",
             context={
                 "status_code": "401",
                 "error_title": "Oh ohhhhh!",
-                "error_message": data,
-            },
-        )
-
-    session_id = data
-    session = sessions.get(session_id)
-
-    if session:
-        if datetime.now() > session.expiresAt:
-            del sessions[session_id]
-            return templates.TemplateResponse(
-                request=request,
-                name="error.html",
-                context={
-                    "status_code": "401",
-                    "error_title": "Your session has expired",
-                    "error_message": "You've been away too long and our dancing cat missed you! Please log back in to continue your session.",
-                },
-            )
-
-        return templates.TemplateResponse(
-            request=request,
-            name="error.html",
-            context={
-                "status_code": "200",
-                "error_title": "Wait, you're already here!",
-                "error_message": "Trying to log in again? Our dancing cat says you're already signed in and ready to go!",
-            },
-        )
-
-    if token in blacklist_tokens:
-        return templates.TemplateResponse(
-            request=request,
-            name="error.html",
-            context={
-                "status_code": "401",
-                "error_title": "Login link is no longer valid.",
-                "error_message": "Our dancing cat says, login link is expired and asks you to request a new login link.",
+                "error_message": "Login link expired or its invalid. Please request a new login to continue.",
             },
         )
 
@@ -151,13 +112,13 @@ async def login_page(request: Request, token: str) -> HTMLResponse:
 
 @rez_app.post("/auth/login")
 async def authorize(request: Request, token: str, creds: LoginCreds) -> JSONResponse:
-    data, valid = verify_token(token)
+    if token in blacklist_tokens:
+        raise HTTPException(detail="Token is no longer valid", status_code=401)
 
+    data, valid = verify_token(token)
     if not valid:
         raise HTTPException(detail=data, status_code=401)
 
-    if token in blacklist_tokens:
-        raise HTTPException(detail="Token is no longer valid", status_code=401)
 
     session_id = data
 

@@ -10,6 +10,6 @@ RUN uv sync --frozen
 
 COPY . .
 
-EXPOSE 5432
+EXPOSE 4567 
 
-CMD ["uv", "run", "uvicorn", "--host", "0.0.0.0", "--port", "5432", "main:app"]
+CMD ["uv", "run", "./src/main.py"]
