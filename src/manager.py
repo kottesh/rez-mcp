@@ -215,9 +215,9 @@ async def generate_result(request: Request, token: str) -> StreamingResponse:
             request=request,
             name="error.html",
             context={
-                "status_code": "401",
+                "status_code": "410",
                 "error_title": "Oh ohhhhh!",
-                "error_message": data,
+                "error_message": "The link is invalid or its expired, Please request a new one.",
             },
         )
 
@@ -266,9 +266,9 @@ async def generate_hallticket(request: Request, token: str) -> StreamingResponse
             request=request,
             name="error.html",
             context={
-                "status_code": "401",
+                "status_code": "410",
                 "error_title": "Oh ohhhhh!",
-                "error_message": data,
+                "error_message": "The link is invalid or its expired, Please request a new one.",
             },
         )
 
