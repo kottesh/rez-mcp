@@ -119,7 +119,6 @@ async def authorize(request: Request, token: str, creds: LoginCreds) -> JSONResp
     if not valid:
         raise HTTPException(detail=data, status_code=401)
 
-
     session_id = data
 
     with httpx.Client(

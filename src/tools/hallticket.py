@@ -31,9 +31,13 @@ async def get_halltickets(ctx: Context) -> list[str] | str:
     sp = BeautifulSoup(response, "html.parser")
 
     input_tags = sp.find_all("input", {"id": "exam_cd"})
-    exam_codes = [
-        set(exam_code for tag in input_tags if (exam_code := tag.get("value", "").strip()))
-    ]
+    exam_codes = list(
+        set(
+            exam_code
+            for tag in input_tags
+            if (exam_code := tag.get("value", "").strip())
+        )
+    )
 
     if not exam_codes:
         logger.info(f"No halltickets are available | Session ID: {session.session_id}")

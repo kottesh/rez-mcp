@@ -35,8 +35,8 @@ def verify_token(token: str) -> tuple[str | None, bool]:
         parts = token.split(".", 1)
 
         if len(parts) != 2:
-            logger.info(f"Invalid token | {token}") 
-            return None, False 
+            logger.info(f"Invalid token | {token}")
+            return None, False
 
         payload, expected_sig = base64_decode(parts[0]), base64_decode(parts[1])
 
@@ -49,7 +49,9 @@ def verify_token(token: str) -> tuple[str | None, bool]:
         data, expiry = payload.decode().rsplit("|", 1)
 
         if int(time.time()) > int(expiry):
-            logger.info(f"Token expired | {token} | Expired at: {datetime.fromtimestamp(expiry)}")
+            logger.info(
+                f"Token expired | {token} | Expired at: {datetime.fromtimestamp(expiry)}"
+            )
             return None, False
 
         return data, True
