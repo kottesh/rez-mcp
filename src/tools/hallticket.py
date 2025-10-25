@@ -32,7 +32,7 @@ async def get_halltickets(ctx: Context) -> list[str] | str:
 
     input_tags = sp.find_all("input", {"id": "exam_cd"})
     exam_codes = [
-        exam_code for tag in input_tags if (exam_code := tag.get("value", "").strip())
+        set(exam_code for tag in input_tags if (exam_code := tag.get("value", "").strip()))
     ]
 
     if not exam_codes:

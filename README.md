@@ -14,3 +14,5 @@ You can even skip the installation steps and try using the hosted REZ MCP Server
 ## Demo
 
 https://github.com/user-attachments/assets/421a1889-1f03-4abe-bf42-977b4546736c
+
+https://github.com/user-attachments/assets/2f6d9e00-faa5-453d-a4c5-a161ca6ef02e
